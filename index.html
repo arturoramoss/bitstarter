@@ -181,24 +181,71 @@
 	</div>
       </div>
 
-      <div class="row section1">
-	<div class="span12">
-	  Marketin Section 1
+      <!-- Beyond this part the marketing copy begins. -->
+      <!-- https://developer.mozilla.org/en-US/docs/Web/CSS/text-align -->
+      <!-- https://twitter.github.io/bootstrap/base-css.html#images -->
+      <!-- http://placehold.it -->
+      <div class="row-fluid section1">
+	<div class="span5 offset1 asset">
+	  <img class="img-polaroid" src="http://placehold.it/480x300">
+	</div>
+	<div class="span5 copy">
+	  <p>
+	    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec porta, dui sagittis hedrerit rutrum, nunc leo tempou nisl, ut mollis usto velit at nunc. Fuce nec egestas sem. doncec fringilla ante lectus , a pellentesque lactis disnissim ac.
+	  </p>
 	</div>
       </div>
-      <div class="row section2">
-	<div class="span12">
-	  Marketin Section 2
+
+      <div class="row-fluid section2">
+	<div class="span5 offset1 copy copy-right">
+	  <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec porta, dui sagittis hedrerit rutrum, nunc leo tempou nisl, ut mollis usto velit at nunc. Fuce nec egestas sem. doncec fringilla ante lectus , a pellentesque lactis disnissim ac.</p>
+	</div>
+	<div class="span5 asset">
+	  <img class="img-polaroid" src="http://placehold.it/480x300">
 	</div>
       </div>
-      <div class="row faq">
-	<div class="span12">
-	  FAQ
+
+      <!-- For the FAQ, we introduce a little bit of JS, using the accordion. -->
+      <!-- this brings in jquiery.js and bootstrap.js as dependencies. -->
+      <!-- http://twitter.github.io/bootstrap/javascript.html#collapse -->
+      <div class="row-fluid faq">
+	<div class="span10 offset1">
+	  <h3>FAQ</h3>
+	  <div class="accordion" id="accordion2">
+	    <div class="accordion-group">
+	      <div class="accordion-heading">
+		<a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion2" href="#collapseOne">
+		  What does FAQ stan for?
+		</a>
+	      </div>
+	      <div id="collapseOne" class="accordion-body collapse">
+		<div class="accordion-inner">
+		  Frequently Asked Question.
+		</div>
+	      </div>
+	    </div>
+	    <div class="accordion-group">
+	      <div class="accordion-heading">
+		<a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion2" href="collapseTwo">
+		  What's a Frequently Asked Question?
+		</a>
+	      </div>
+	      <div id="collapseTwo" class="accordion/body collapse">
+		<div class="accordion-inner">
+		  Aquestion which is commonly asked by users.
+		</div>
+	      </div>
+	    </div>
+	  </div>	
 	</div>
       </div>
-      <div class="row footer">
+
+      <!-- Not crucial, but we put this under a CC By-SA 3.0 license. -->
+      <!-- http://creativecommons.org/licenses/ -->
+      <div class="row-fluid footer">
 	<div class="span12">
-	  Footer
+	  <p>This work is licensed under the <a href="http://creativecommons.org/licenses/by-sa/3.0/">CC By-SA 3.0
+	      </a>, without all the cruft that would otherwise be put at the bottom of the page.</p>
 	</div>
       </div>
     </div>
