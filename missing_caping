@@ -1,0 +1,151 @@
+# Esta funciÃ³n permite eliminar las variables con mÃ¡s del 99% de los caos en un solo valor,
+# variables con mas del 90% de los casos en missing.
+# Permite capear variables e imputar valores missing.
+
+# El capeo se hace al percentil 99 y la imputaciÃ³n de la siguiente manera:
+#     - Variables continuas: se imputa con el promedio del rango con
+#     tasa de malo mÃ¡s cercana a la tasa de malo de los missing.
+#     - Variables categÃ³ricas:se imputa con la categoria de la variable
+#     con tasa de malo mÃ¡s cercana a la tasa de malo de los missing.
+
+# Ejemplo:
+# data = data.frame(
+#    V1 = ifelse(runif(1000) < 0.1, NA,
+#         ifelse(runif(1000) < 0.5, runif(1000), 1)),
+#
+#    V2 = ifelse(runif(1000) < 0.1, NA,
+#         ifelse(runif(1000) < 0.5, "a", "b")),
+#
+#    target = ifelse(runif(1000) < 0.3, 1, 0))
+
+#                     Score Total %Tot  Malo  %Malo Tasa.Malo(%)
+#         <NA>        NA    112   11.2  32    11.23 28.57
+# "[0.96446, 1]"      1     444   44.4  128   44.91 28.83
+# "[0.75311, 0.964)"  0.86  88    8.8   25    8.77  28.41
+# "[0.55661, 0.753)"  0.66  89    8.9   25    8.77  28.09
+# "[0.37843, 0.557)"  0.46  89    8.9   18    6.32  20.22
+# "[0.18060, 0.378)"  0.28  89    8.9   25    8.77  28.09
+# "[0.00288, 0.181)"  0.09  89    8.9   32    11.23 35.96
+#                      NA  1000   100   285   100   NA
+
+# 28.57 es la tasa de malo del NA y el mas cercano es el rango "[0.75311, 0.964)"
+# con tasa de malo 28.41, por tanto se va impuntar con el promedio de ese rango, es decir 0.86
+
+#      Total %Tot  Malo  %Malo Tasa.Malo(%)
+# a    457   45.7  132   46.32 28.88
+# b    441   44.1  118   41.4  26.76
+# <NA> 102   10.2  35    12.28 34.31
+#      1000  100   285   100   28.5
+
+# 34.31 es la tasa de malo del NA y el mas cercano es la categoria "a" con tasa de malo 28.88,
+# por tanto se va impuntar con esa categoria, es decir con "a"
+
+# Es necesario Cargar la funciÃ³n "tbl_performance.r"
+
+
+######  PROCESOS  #################
+
+# Para usar la funciÃ³n con este ejemplo hay que poner dat_miss_capp(data, "target")
+# x data frame de la base de datos
+# y nombre del target de la base (contenido en el dataframe x)
+dat_miss_capp = function(x, y, exclude=c()){
+
+  por_poblamiento = 0.99
+  datos_ingres_total = x
+
+  # validamos que la columan y exista en el df x
+  if(!(y %in% names(x))){
+    print(paste(y, "no existe en el dataframe especificado"))
+    return(NULL)
+  }
+
+  # Dejamos las columnas que tengan en porcentaje de poblamiento requerido de casos distintos
+  cols_invalidas = c() # columnas del df a eliminar
+
+  for(col in 1:ncol(datos_ingres_total)){
+    toExclude = names(datos_ingres_total[col]) %in% exclude
+    if(!toExclude & max(prop.table(table(datos_ingres_total[, col]))) >= por_poblamiento){
+      cols_invalidas = c(cols_invalidas, col)
+    }
+  }
+
+  if(length(cols_invalidas) > 0){
+    datos_ingres_total = datos_ingres_total[, -cols_invalidas]
+  }
+
+
+
+  # Dejamos las columnas que tengan mÃ¡s del 90%
+  cols_invalidas = c() # columnas del df a eliminar
+  for(col in 1:ncol(datos_ingres_total)){
+    toExclude = names(datos_ingres_total[col]) %in% exclude
+    if(!toExclude & sum(is.na(datos_ingres_total[, col])) / nrow(datos_ingres_total) > 0.9){
+      cols_invalidas = c(cols_invalidas, col)
+    }
+  }
+
+  if(length(cols_invalidas) > 0){
+    datos_ingres_total = datos_ingres_total[, -cols_invalidas]
+  }
+
+
+
+  # Imputar valores perdidos
+  id_target = which(names(datos_ingres_total) == y)
+
+  for(col in 1:ncol(datos_ingres_total)){
+    toExclude = names(datos_ingres_total[col]) %in% exclude
+    if(!toExclude & anyNA(datos_ingres_total[, col])){
+      base = datos_ingres_total[, c(col, id_target)]
+      tabla = report_cont(base[, 1], base[, 2])
+
+      sub_tabla = cbind(tabla[!(row.names(tabla) %in% c(NA)), "Tasa.Malo(%)"],
+                        rep(tabla[(row.names(tabla) %in% c(NA)), "Tasa.Malo(%)"],
+                        length(tabla[!(row.names(tabla) %in% c(NA)), "Tasa.Malo(%)"])))
+
+      sub_tabla = cbind(sub_tabla, abs(sub_tabla[, 1]-sub_tabla[, 2]))
+      value_corte = sub_tabla[sub_tabla[, 3] == min(sub_tabla[, 3], na.rm = T), 1]
+
+      if(class(datos_ingres_total[, col]) == 'integer' | class(datos_ingres_total[, col]) == 'numeric'){
+        media = tabla[tabla[, "Tasa.Malo(%)"] == value_corte[[1]], "Score"]
+        datos_ingres_total[is.na(datos_ingres_total[, col]) == TRUE, col] = round(media[[1]], 0)
+      } else {
+        media = row.names(tabla)[tabla[, "Tasa.Malo(%)"] == value_corte]
+        datos_ingres_total[is.na(datos_ingres_total[, col]) == TRUE, col] = media
+      }
+
+      media = tabla[tabla[, "Tasa.Malo(%)"] == value_corte[[1]], "Score"]
+      datos_ingres_total[is.na(datos_ingres_total[, col]) == TRUE, col] = round(media[[1]], 0)
+    }
+  }
+
+
+  # Capeo de variables
+  for (col in 1:ncol(datos_ingres_total)){
+    toExclude = names(datos_ingres_total[col]) %in% exclude
+    if(!toExclude & (class(datos_ingres_total[, col]) == 'integer' | class(datos_ingres_total[, col]) == 'numeric')) {
+      datos_ingres_total[, col] =
+        ifelse(datos_ingres_total[, col] > quantile(datos_ingres_total[, col], c(.99), na.rm = TRUE),
+               round(quantile(datos_ingres_total[, col], c(.99), na.rm = TRUE)),
+               datos_ingres_total[, col])
+    }
+  }
+
+
+  # Verificacion de poblamiento pos capping
+
+  cols_invalidas = c()
+
+  for(col in 1:ncol(datos_ingres_total)){
+    toExclude = names(datos_ingres_total[col]) %in% exclude
+    if(!toExclude & max(prop.table(table(datos_ingres_total[, col]))) >= por_poblamiento){
+      cols_invalidas = c(cols_invalidas, col)
+    }
+  }
+
+  if(length(cols_invalidas) > 0){
+    datos_ingres_total = datos_ingres_total[, -cols_invalidas]
+  }
+
+  return(datos_ingres_total)
+}
