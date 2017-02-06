@@ -1,0 +1,63 @@
+fix.dfcolumns = function(
+	df,
+	ints = INTEGER_COLUMNS,
+	nums = NUMERIC_COLUMNS,
+	strs = STRING_COLUMNS,
+	fcts = FACTOR_COLUMNS,
+	exclude = c()){
+
+	names(df) = tolower(names(df))
+
+	for(i in 1:ncol(df)){
+		colName = names(df)[i]
+		colClass = class(df[, i])
+
+		if(colName %in% exclude){
+			next
+		}
+
+		matchedXpctdClass = c(colName %in% ints, colName %in% nums, colName %in% strs, colName %in% fcts)
+
+		if(length(which(matchedXpctdClass == TRUE)) == 0){
+			print(paste(colName, "no se encuentra en los diccionarios"))
+			next
+		} else if (length(which(matchedXpctdClass == TRUE)) > 1) {
+			print(paste(colName, "se encuentra en mÃ¡s de un diccionario"))
+			next
+		}
+
+		xpctdClass = switch(match(TRUE, matchedXpctdClass), "integer", "numeric", "character","factor")
+
+		if(colClass != xpctdClass){
+			if(xpctdClass == "integer"){
+				if(colClass == "factor"){
+					df[, i] = as.integer(as.character(df[, i]))
+				} else if(colClass %in% c("character", "numeric")){
+					df[, i] = as.integer(df[, i])
+				}
+
+			} else if(xpctdClass == "numeric"){
+				if(colClass == "factor"){
+					df[, i] = as.numeric(as.character(df[, i]))
+				} else if(colClass == "character"){
+					df[, i] = as.numeric(df[, i])
+				}
+
+			} else if(xpctdClass == "character"){
+				if(colClass %in% c("factor", "numeric", "integer")){
+					df[, i] = as.character(df[, i])
+				}
+
+			} else if(xpctdClass == "factor"){
+				if(colClass %in% c( "numeric", "integer","character")){
+					df[, i] = as.factor(df[, i])
+				}
+
+			} else {
+				print(paste("ConversiÃ³n de", colClass, "a", xpctdClass, "no especificada"))
+			}
+		}
+	}
+
+	return(df)
+}
