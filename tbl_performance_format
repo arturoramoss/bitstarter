@@ -1,0 +1,91 @@
+tbl_format_cont <- function(x){
+n=dim(x)[1]-1
+mat<-x[1:n,]
+nbucket <- order(seq(1:dim(mat)[1]),decreasing=TRUE)
+corte=data.frame(rango_score=row.names(mat))
+min_score<-c(as.integer(as.character(substr(corte$rango_score,2,4))))
+max_score<-c(as.integer(as.character(substr(corte$rango_score,6,8))))-1
+col_ad <- c("%Tot","%AcumTotal","%DesacTotal","%Bueno","%AcumBueno","%DesacBueno","%Malo","%AcumMalo","%DesacMalo",
+"Tasa.Malo(%)","TasaAcumMalo(%)","TasaDesMalo(%)","Bueno/Maloodd","K-S")
+
+mdf<- data.frame(nbucket,min_score,max_score,mat[,colnames(mat) %in% col_ad])
+
+write.csv(mdf,"tbl_format_cont.csv",row.names = FALSE)
+
+}
+
+tbl_format_cat <- function(x){
+n=dim(x)[1]-1
+mat<-x[1:n,]
+nbucket <- order(seq(1:dim(mat)[1]),decreasing=TRUE)
+rango_score=row.names(mat)
+col_ad <- c("%Tot","%AcumTotal","%DesacTotal","%Bueno","%AcumBueno","%DesacBueno","%Malo","%AcumMalo","%DesacMalo",
+"Tasa.Malo(%)","TasaAcumMalo(%)","TasaDesMalo(%)","Bueno/Maloodd","K-S")
+
+mdf<- data.frame(nbucket,rango_score,mat[,colnames(mat) %in% col_ad])
+
+write.csv(mdf,"tbl_format_cat.csv",row.names = FALSE)
+
+}
+
+
+report_cont_score <- function(x,y,g=20){
+library(Hmisc)
+
+rango <- cut2(x,g=g)
+ordena <- seq(1:length(unique(rango)))
+tab_base <- cbind(ordena,table(factor(rango,exclude=NULL),y))
+tab_base <- tab_base[order(-tab_base[,1]),2:3]
+
+total <- margin.table(tab_base,1)
+total_ac <- cumsum(total)
+total_des<-cbind(ordena,cumsum(total[order(-total_ac)]))
+total_des<-total_des[order(-total_des[,1]),2]
+
+porc_total <- prop.table(total)
+porc_ac_total <- cumsum(porc_total)
+porc_des_total <- cbind(ordena,cumsum(porc_total[order(-porc_ac_total)]))
+porc_des_total <- porc_des_total[order(-porc_des_total[,1]),2]
+
+buenos <- tab_base[,1]
+porc_buenos <- prop.table(buenos)
+porc_ac_buenos <- cumsum(porc_buenos)
+porc_des_buenos <- cbind(ordena,cumsum(porc_buenos[order(-porc_ac_buenos)]))
+porc_des_buenos <- porc_des_buenos[order(-porc_des_buenos[,1]),2]
+
+malos <- tab_base[,2]
+malos_ac <- cumsum(malos)
+malos_des<-cbind(ordena,cumsum(malos[order(-malos_ac)]))
+malos_des<-malos_des[order(-malos_des[,1]),2]
+
+porc_malos <- prop.table(malos)
+porc_ac_malos <- cumsum(porc_malos)
+porc_des_malos <- cbind(ordena,cumsum(porc_malos[order(-porc_ac_malos)]))
+porc_des_malos <- porc_des_malos[order(-porc_des_malos[,1]),2]
+prob_malo <- tab_base[,2]/total
+tasa_ac_malos <- malos_ac/total_ac
+tasa_des_malos<-malos_des/total_des
+
+woe <- log(porc_buenos/porc_malos)*100
+iv <- (woe)*(porc_buenos-porc_malos)
+ks <- abs(porc_ac_buenos - porc_ac_malos)
+val_medio <- cbind(c(1:length(unique(rango))),tapply(x,factor(rango,exclude=NULL),mean)); med_score <- mean(x)
+
+val_medio <- val_medio[order(-val_medio[,1]),2]
+
+BM_odd <- tab_base[,1]/tab_base[,2]
+
+tab_final <- cbind(val_medio,total,porc_total,porc_ac_total,porc_des_total,buenos,porc_buenos,porc_ac_buenos,
+porc_des_buenos,malos,porc_malos,porc_ac_malos,porc_des_malos,prob_malo,tasa_ac_malos,tasa_des_malos,BM_odd,woe,iv,ks)
+colnames(tab_final) <- c("Score","Total","%Tot","%AcumTotal","%DesacTotal","Bueno","%Bueno","%AcumBueno","%DesacBueno",
+"Malo","%Malo","%AcumMalo","%DesacMalo","Tasa.Malo(%)","TasaAcumMalo(%)","TasaDesMalo(%)","Bueno/Maloodd","WOE","IV",
+"K-S")
+
+total_tab <- cbind(med_score,sum(tab_final[,2]),sum(tab_final[,3]),NA,NA,sum(tab_final[,6]),sum(tab_final[,7]),NA,NA,
+sum(tab_final[,10]),sum(tab_final[,11]),NA,NA,NA,NA,NA,sum(tab_final[,6])/sum(tab_final[,10]),NA,sum(tab_final[,19]),
+max(tab_final[,20]))
+
+
+tab_final <- rbind(tab_final,total_tab)
+tab_final
+}
