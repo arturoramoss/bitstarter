@@ -97,7 +97,12 @@ dat_miss_capp = function(x, y, exclude=c()){
     toExclude = names(datos_ingres_total[col]) %in% exclude
     if(!toExclude & anyNA(datos_ingres_total[, col])){
       base = datos_ingres_total[, c(col, id_target)]
-      tabla = report_cont(base[, 1], base[, 2])
+
+      if(class(datos_ingres_total[, col]) == 'integer' | class(datos_ingres_total[, col]) == 'numeric'){
+        tabla = report_cont(base[, 1], base[, 2])
+      } else {
+        tabla = report_cat(base[, 1], base[, 2])
+      }
 
       sub_tabla = cbind(tabla[!(row.names(tabla) %in% c(NA)), "Tasa.Malo(%)"],
                         rep(tabla[(row.names(tabla) %in% c(NA)), "Tasa.Malo(%)"],
@@ -114,8 +119,6 @@ dat_miss_capp = function(x, y, exclude=c()){
         datos_ingres_total[is.na(datos_ingres_total[, col]) == TRUE, col] = media
       }
 
-      media = tabla[tabla[, "Tasa.Malo(%)"] == value_corte[[1]], "Score"]
-      datos_ingres_total[is.na(datos_ingres_total[, col]) == TRUE, col] = round(media[[1]], 0)
     }
   }
 
