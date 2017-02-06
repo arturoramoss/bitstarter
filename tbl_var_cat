@@ -1,0 +1,68 @@
+report_cat <- function(x,y,score=NULL,plot=F){
+library(Hmisc)
+
+rango <- factor(x,exclude=NULL)
+ordena <- seq(1:length(unique(rango)))
+tab_base <- cbind(ordena,table(factor(rango,exclude=NULL),y))
+tab_base <- tab_base[order(-tab_base[,1], decreasing = TRUE),2:3]
+# tab_base <- tab_base[order(-tab_base[,1]),2:3]
+
+total <- margin.table(tab_base,1)
+total_ac <- cumsum(total)
+total_des<-cbind(ordena,cumsum(total[order(-total_ac)]))
+total_des<-total_des[order(-total_des[,1]),2]
+
+porc_total <- prop.table(total)*100
+porc_ac_total <- cumsum(porc_total)
+porc_des_total <- cbind(ordena,cumsum(porc_total[order(-porc_ac_total)]))
+porc_des_total <- porc_des_total[order(-porc_des_total[,1]),2]
+
+
+buenos <- tab_base[,1]
+porc_buenos <- prop.table(buenos)*100
+porc_ac_buenos <- cumsum(porc_buenos)
+porc_des_buenos <- cbind(ordena,cumsum(porc_buenos[order(-porc_ac_buenos)]))
+porc_des_buenos <- porc_des_buenos[order(-porc_des_buenos[,1]),2]
+
+malos <- tab_base[,2]
+malos_ac <- cumsum(malos)
+malos_des<-cbind(ordena,cumsum(malos[order(-malos_ac)]))
+malos_des<-malos_des[order(-malos_des[,1]),2]
+
+porc_malos <- prop.table(malos)*100
+porc_ac_malos <- cumsum(porc_malos)
+porc_des_malos <- cbind(ordena,cumsum(porc_malos[order(-porc_ac_malos)]))
+porc_des_malos <- porc_des_malos[order(-porc_des_malos[,1]),2]
+prob_malo <- tab_base[,2]/total*100
+tasa_ac_malos <- malos_ac/total_ac*100
+tasa_des_malos<-malos_des/total_des*100
+
+woe <- log(porc_buenos/porc_malos)*100
+iv <- (woe/100)*(porc_buenos/100-porc_malos/100)
+ks <- abs(porc_ac_buenos - porc_ac_malos)
+BM_odd <- tab_base[,1]/tab_base[,2]
+
+if(!is.null(score))
+{ val_medio <- cbind(c(1:length(unique(rango))),tapply(score,factor(rango,exclude=NULL),mean)); val_medio <- val_medio[order(-val_medio[,1]),2]
+  tab_final <- cbind(val_medio,total,porc_total,porc_ac_total,porc_des_total,buenos,porc_buenos,porc_ac_buenos,porc_des_buenos,malos,porc_malos,porc_ac_malos,porc_des_malos,prob_malo,tasa_ac_malos,tasa_des_malos,BM_odd,woe,iv,ks)
+colnames(tab_final) <- c("Score","Total","%Tot","%AcumTotal","%DesacTotal","Bueno","%Bueno","%AcumBueno","%DesacBueno","Malo","%Malo","%AcumMalo","%DesacMalo","Tasa.Malo(%)","TasaAcumMalo(%)","TasaDesMalo(%)","Bueno/Maloodd","WOE","IV","K-S")
+
+total_tab <- cbind(med_score,sum(tab_final[,2]),sum(tab_final[,3]),NA,NA,sum(tab_final[,6]),sum(tab_final[,7]),NA,NA,sum(tab_final[,10]),sum(tab_final[,11]),NA,
+NA,NA,NA,NA,sum(tab_final[,6])/sum(tab_final[,10]),NA,sum(tab_final[,18]),max(tab_final[,19]))
+
+}
+
+else 
+{
+  tab_final <- cbind(total,porc_total,porc_ac_total,porc_des_total,buenos,porc_buenos,porc_ac_buenos,porc_des_buenos,malos,porc_malos,porc_ac_malos,porc_des_malos,prob_malo,tasa_ac_malos,tasa_des_malos,BM_odd,woe,iv,ks)
+colnames(tab_final) <- c("Total","%Tot","%AcumTotal","%DesacTotal","Bueno","%Bueno","%AcumBueno","%DesacBueno","Malo","%Malo","%AcumMalo","%DesacMalo","Tasa.Malo(%)","TasaAcumMalo(%)","TasaDesMalo(%)","Bueno/Maloodd","WOE","IV","K-S")
+
+total_tab <- cbind(sum(tab_final[,1]),sum(tab_final[,2]),NA,NA,sum(tab_final[,5]),sum(tab_final[,6]),NA,NA,sum(tab_final[,9]),sum(tab_final[,10]),NA,
+NA,100*(sum(tab_final[,9])/sum(tab_final[,1])),NA,NA,sum(tab_final[,5])/sum(tab_final[,9]),NA,sum(tab_final[,18]),max(tab_final[,19]))
+}
+
+if(plot==T) { plot(tab_final[,1],tab_final[,16],type="b",col="red",lwd=2,xlab="X prom.",ylab="WOE",main="Trend WOE vs. X"); abline(h=0,lty=3) }
+
+tab_final <- round(rbind(tab_final,total_tab),2)
+tab_final
+}
